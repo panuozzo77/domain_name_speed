@@ -1,13 +1,20 @@
 #!/bin/bash
 
-# Define input files and URLs
-DNS_SERVERS_FILE="dns_servers.txt"
-QUERIES_FILE="queries.txt"
-RESULTS_FILE="results.txt"
+# Default value
+RESULTS_FILE="../results/results.txt"
+SORTED_RESULTS_FILE="../results/sorted.txt"
+
+# Default values
 DNS_SERVERS_URL="https://public-dns.info/nameserver/it.txt"
-TEMP_DNS_FILE="dns_servers_temp.txt"
-DEFAULT_DNS_SERVERS_FILE="default_dns_servers.txt"  # File containing default DNS servers
-COMBINED_DNS_SERVERS_FILE="combined_dns_servers.txt"  # Temporary file for combined DNS servers
+TEMP_DNS_FILE="../config/dns_servers_temp.txt"
+
+# Defined from config/ folder
+DNS_SERVERS_FILE="../config/dns_servers.txt"
+QUERIES_FILE="../config/queries.txt"
+DEFAULT_DNS_SERVERS_FILE="../config/default_dns_servers.txt"  # File containing default DNS servers
+COMBINED_DNS_SERVERS_FILE="../config/combined_dns_servers.txt"  # Temporary file for combined DNS servers
+DEFAULT_DNS_SERVERS_FILE="../config/default_dns_servers.txt"  # File containing default DNS servers
+COMBINED_DNS_SERVERS_FILE="../config/combined_dns_servers.txt"  # Temporary file for combined DNS servers
 
 # Function to run dnsperf and save results
 run_dnsperf() {
@@ -29,23 +36,21 @@ run_dnsperf() {
     qps=$(echo "$output" | grep "Queries per second:" | awk '{print $4}')
     avg_latency=$(echo "$output" | grep "Average Latency (s):" | awk '{print $4}')
 
-    # Write results to file
+    # Write results to file (thread-safe)
     echo "$dns_server, Queries Sent: $queries_sent, Queries Completed: $queries_completed, QPS: $qps, Avg Latency: $avg_latency" >> "$results_file"
 }
+
 
 # Function to sort and save results
 save_and_sort_results() {
     if [[ -s "$RESULTS_FILE" ]]; then
         echo "Saving and sorting the results..."
         # Use awk to sort by QPS without including it at the start of the line
-        awk -F', ' '{print $0}' "$RESULTS_FILE" | sort -k4 -nr > "sorted_$RESULTS_FILE"
-        echo "Benchmarking complete. Results saved to $RESULTS_FILE and sorted results saved to sorted_$RESULTS_FILE."
+	awk -F', ' '{print $0}' "$RESULTS_FILE" | sort -k4 -nr > "$SORTED_RESULTS_FILE"
+        echo "Benchmarking complete. Results saved to $RESULTS_FILE and sorted results saved to $SORTED_RESULTS_FILE."
     else
         echo "No results to save."
     fi
-
-    # Clean up: restore original dns_servers.txt from downloaded version
-    # mv "$TEMP_DNS_FILE" "$DNS_SERVERS_FILE"
 }
 
 # Handle SIGINT (CTRL+C) signal
@@ -104,21 +109,20 @@ export -f run_dnsperf
 export QUERIES_FILE
 export RESULTS_FILE
 
+# Prepare a file for Parallel processing
+dns_test_list="dns_test_list.txt"
+head -n "$user_input" "$COMBINED_DNS_SERVERS_FILE" > "$dns_test_list"
+
 # Run dnsperf in parallel
 echo "Running dnsperf with $num_jobs parallel jobs..."
 counter=1
-for dns_server in "${dns_servers[@]}"; do
-    # Only process the user-defined number of servers
-    if (( counter > user_input )); then
-        break
-    fi
-    # Pass the current counter and user input to the run_dnsperf function
-    echo "$dns_server" | parallel -j "$num_jobs" run_dnsperf {} "$QUERIES_FILE" "$RESULTS_FILE" "$counter" "$user_input" &
-    ((counter++))
-done
+parallel -j "$num_jobs" run_dnsperf ::: $(<"$dns_test_list") ::: "$QUERIES_FILE" ::: "$RESULTS_FILE" ::: "$counter" ::: "$user_input"
 
-# Wait for all background jobs to complete
+# Wait for all parallel jobs to complete
 wait
 
 # Sort and save the results at the end of the script
 save_and_sort_results
+
+# Clean up the temp file used for parallel execution
+rm "$dns_test_list"
