@@ -48,6 +48,11 @@ save_and_sort_results() {
         # Use awk to sort by QPS without including it at the start of the line
 	awk -F', ' '{print $0}' "$RESULTS_FILE" | sort -k4 -nr > "$SORTED_RESULTS_FILE"
         echo "Benchmarking complete. Results saved to $RESULTS_FILE and sorted results saved to $SORTED_RESULTS_FILE."
+        
+        # Clean up the temp file used for parallel execution
+        if [[ -f "$dns_test_list" ]]; then
+            rm "$dns_test_list"
+        fi
     else
         echo "No results to save."
     fi
@@ -124,5 +129,4 @@ wait
 # Sort and save the results at the end of the script
 save_and_sort_results
 
-# Clean up the temp file used for parallel execution
-rm "$dns_test_list"
+
