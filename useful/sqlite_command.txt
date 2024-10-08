@@ -1,0 +1,2 @@
+sqlite3 /etc/pihole/pihole-FTL.db "SELECT domain FROM queries WHERE (STATUS == 2 OR STATUS == 3) GROUP BY domain ORDER BY count(domain) DESC LIMIT 50;"
+
