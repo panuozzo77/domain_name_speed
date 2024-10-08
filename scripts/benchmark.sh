@@ -1,21 +1,26 @@
 #!/bin/bash
 
-# Define input files and URLs
-DNS_SERVERS_FILE="dns_servers.txt"
-QUERIES_FILE="queries.txt"
-RESULTS_FILE="results.txt"
+# Default value
+RESULTS_FILE="../results/results.txt"
+SORTED_RESULTS_FILE="../results/sorted.txt"
+
+# Default values
 DNS_SERVERS_URL="https://public-dns.info/nameserver/it.txt"
-TEMP_DNS_FILE="dns_servers_temp.txt"
-DEFAULT_DNS_SERVERS_FILE="default_dns_servers.txt"  # File containing default DNS servers
-COMBINED_DNS_SERVERS_FILE="combined_dns_servers.txt"  # Temporary file for combined DNS servers
+TEMP_DNS_FILE="../config/dns_servers_temp.txt"
+
+# Defined from config/ folder
+DNS_SERVERS_FILE="../config/dns_servers.txt"
+QUERIES_FILE="../config/queries.txt"
+DEFAULT_DNS_SERVERS_FILE="../config/default_dns_servers.txt"  # File containing default DNS servers
+COMBINED_DNS_SERVERS_FILE="../config/combined_dns_servers.txt"  # Temporary file for combined DNS servers
 
 # Function to sort and save results
 save_and_sort_results() {
     if [[ -s "$RESULTS_FILE" ]]; then
         echo "Saving and sorting the results..."
         # Use awk to sort by QPS without including it at the start of the line
-	awk -F', ' '{print $0}' "$RESULTS_FILE" | sort -k4 -nr > "sorted_$RESULTS_FILE"
-        echo "Benchmarking complete. Results saved to $RESULTS_FILE and sorted results saved to sorted_$RESULTS_FILE."
+	awk -F', ' '{print $0}' "$RESULTS_FILE" | sort -k4 -nr > "$SORTED_RESULTS_FILE"
+        echo "Benchmarking complete. Results saved to $RESULTS_FILE and sorted results saved to $SORTED_RESULTS_FILE."
     else
         echo "No results to save."
     fi
