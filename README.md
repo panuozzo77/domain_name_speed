@@ -24,6 +24,7 @@ The project consists of the following files:
 - **Performance Benchmarking**: Benchmark DNS servers using the `dnsperf` tool to measure their performance.
 - **Result Management**: Save and sort results based on performance metrics for easy analysis.
 - **Parallel Execution**: Option for parallel execution to speed up the testing process and improve efficiency.
+- **Saving On Exit**: If an interrupt is detected, a results file will be generated, ensuring that no data is lost.
 
 ## Prerequisites
 
